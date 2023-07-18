@@ -1,7 +1,7 @@
 package hyparview;
 
 import appExamples2.appExamples.channels.babelQuicChannel.BabelQUIC_TCP_Channel;
-
+import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPChannel;
 import hyparview.messages.*;
 import hyparview.notifications.NeighDown;
 import hyparview.notifications.NeighUp;
@@ -19,7 +19,7 @@ import pt.unl.fct.di.novasys.babel.core.GenericProtocolExtension;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 
 import pt.unl.fct.di.novasys.network.data.Host;
-import tcpSupport.tcpStreamingAPI.utils.TCPStreamUtils;
+import tcpSupport.tcpChannelAPI.utils.TCPStreamUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -92,12 +92,15 @@ public class HyparView extends GenericProtocolExtension {
         if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPStreamUtils.tcpChannelProperties(address,port);
             channelName = BabelQUIC_TCP_Channel.NAME_TCP;
-        }else{
+        }else if("QUIC".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPStreamUtils.quicChannelProperty(address,port);
             channelName = BabelQUIC_TCP_Channel.NAME_QUIC;
+        }else{
+            channelProps = TCPStreamUtils.udpChannelProperties(address,port);
+            channelName = BabelUDPChannel.NAME;
         }
 
-        channelProps.remove("AUTO_CONNECT");
+        //channelProps.remove("AUTO_CONNECT");
 
         channelId = createChannel(channelName, channelProps);
 
@@ -458,5 +461,9 @@ public class HyparView extends GenericProtocolExtension {
         }
 
         setupPeriodicTimer(new ShuffleTimer(), this.shuffleTime, this.shuffleTime);
+    }
+
+    public int connectedPeers(){
+        return super.numConnectedPeers(channelId);
     }
 }

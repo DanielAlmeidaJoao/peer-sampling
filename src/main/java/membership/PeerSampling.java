@@ -1,7 +1,7 @@
 package membership;
 
 import appExamples2.appExamples.channels.babelQuicChannel.BabelQUIC_TCP_Channel;
-
+import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPChannel;
 import membership.messages.PullMessage;
 import membership.messages.PushMessage;
 import membership.requests.GetPeerReply;
@@ -22,7 +22,7 @@ import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 import pt.unl.fct.di.novasys.network.data.Host;
-import tcpSupport.tcpStreamingAPI.utils.TCPStreamUtils;
+import tcpSupport.tcpChannelAPI.utils.TCPStreamUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -79,9 +79,12 @@ public class PeerSampling extends GenericProtocolExtension {
         if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPStreamUtils.tcpChannelProperties(address,port);
             channelName = BabelQUIC_TCP_Channel.NAME_TCP;
-        }else{
+        }else if("QUIC".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPStreamUtils.quicChannelProperty(address,port);
             channelName = BabelQUIC_TCP_Channel.NAME_QUIC;
+        }else{
+            channelProps = TCPStreamUtils.udpChannelProperties(address,port);
+            channelName = BabelUDPChannel.NAME;
         }
         channelProps.remove("AUTO_CONNECT");
         channelId = createChannel(channelName, channelProps);
@@ -226,5 +229,9 @@ public class PeerSampling extends GenericProtocolExtension {
         StringBuilder sb = new StringBuilder();
         sb.append("View: ").append(view);
         logger.info(sb);
+    }
+
+    public int connectedPeers(){
+        return super.numConnectedPeers(channelId);
     }
 }

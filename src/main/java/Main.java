@@ -1,7 +1,8 @@
 import appExamples2.appExamples.channels.babelQuicChannel.BabelQUIC_TCP_Channel;
 import appExamples2.appExamples.channels.babelQuicChannel.BabelQuicInitializer;
 import appExamples2.appExamples.channels.initializers.BabelNewTCPChannelInitializer;
-
+import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPChannel;
+import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPInitializer;
 import dissemination.flood.FloodGossip;
 import dissemination.requests.BroadcastRequest;
 import dissemination.requests.DeliverReply;
@@ -37,7 +38,7 @@ public class Main {
         Babel babel = Babel.getInstance();
         babel.registerChannelInitializer(BabelQUIC_TCP_Channel.NAME_QUIC,new BabelQuicInitializer());
         babel.registerChannelInitializer(BabelQUIC_TCP_Channel.NAME_TCP,new BabelNewTCPChannelInitializer());
-
+        babel.registerChannelInitializer(BabelUDPChannel.NAME,new BabelUDPInitializer());
 
         Properties props = Babel.loadConfig(args, DEFAULT_CONF);
         addInterfaceIp(props);
@@ -46,7 +47,7 @@ public class Main {
         String logFile = props.getProperty("logFile");
         if(logFile == null ){
             System.out.println("LOG FILE NAME IS NULL");
-            System.exit(0);
+            //System.exit(0);
         }
         Host self = new Host(InetAddress.getByName(address), Short.parseShort(port));
         //PeerSampling sampling = new PeerSampling(props);
@@ -62,6 +63,7 @@ public class Main {
         dissemination.init(props);
         babel.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() ->{
+            System.out.println("CONNECTED PEERS "+sampling.connectedPeers());
             try{
                 String fName = String.format("logs/%s.info",logFile);
                 File f = new File(fName);
