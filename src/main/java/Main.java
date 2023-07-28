@@ -47,7 +47,7 @@ public class Main {
         String logFile = props.getProperty("logFile");
         if(logFile == null ){
             System.out.println("LOG FILE NAME IS NULL");
-            //System.exit(0);
+            System.exit(0);
         }
         Host self = new Host(InetAddress.getByName(address), Short.parseShort(port));
         //PeerSampling sampling = new PeerSampling(props);
