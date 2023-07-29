@@ -51,7 +51,7 @@ public class PlumTree extends GenericProtocolExtension {
 
     private final HashProducer hashProducer;
 
-    public PlumTree(String channelName, Properties properties, Host myself) throws IOException, HandlerRegistrationException {
+    public PlumTree(String channelName, int channelId, Properties properties, Host myself) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         this.myself = myself;
         this.hashProducer = new HashProducer(myself);
@@ -72,7 +72,28 @@ public class PlumTree extends GenericProtocolExtension {
         this.timeout1 = Long.parseLong(properties.getProperty("timeout1", "1000"));
         this.timeout2 = Long.parseLong(properties.getProperty("timeout2", "500"));
 
-        int channelId = createChannel(channelName, properties);
+        /**
+        String address = properties.getProperty("address");
+        String port = myself.getPort()+"";
+        String NETWORK_PROTO  = properties.getProperty("NETWORK_PROTO");
+
+        Properties channelProps;
+        if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
+            channelProps = TCPStreamUtils.tcpChannelProperties(address,port);
+            channelName = BabelQUIC_TCP_Channel.NAME_TCP;
+        }else if("QUIC".equalsIgnoreCase(NETWORK_PROTO)){
+            channelProps = TCPStreamUtils.quicChannelProperty(address,port);
+            channelName = BabelQUIC_TCP_Channel.NAME_QUIC;
+        }else{
+            channelProps = TCPStreamUtils.udpChannelProperties(address,port);
+            channelName = BabelUDPChannel.NAME;
+        }
+
+        int channelId = createChannel(channelName, channelProps);**/
+
+        registerSharedChannel(channelId);
+
+
         /*---------------------- Register Message Serializers ---------------------- */
         registerMessageSerializer(channelId,GossipMessage.MSG_ID, GossipMessage.serializer);
         registerMessageSerializer(channelId, PruneMessage.MSG_ID, PruneMessage.serializer);

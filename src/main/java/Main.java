@@ -4,6 +4,7 @@ import appExamples2.appExamples.channels.initializers.BabelNewTCPChannelInitiali
 import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPChannel;
 import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPInitializer;
 import dissemination.flood.FloodGossip;
+import dissemination.plumtree.PlumTree;
 import dissemination.requests.BroadcastRequest;
 import dissemination.requests.DeliverReply;
 import hyparview.HyparView;
@@ -55,7 +56,10 @@ public class Main {
         HyparView sampling = new HyparView(BabelQUIC_TCP_Channel.NAME_QUIC, props, self);
         babel.registerProtocol(sampling);
         sampling.init(props);
-        FloodGossip flood = new FloodGossip(props, sampling.getChannel(), sampling.getProtoId());
+
+        //FloodGossip flood = new FloodGossip(props, sampling.getChannel(), sampling.getProtoId());
+        PlumTree flood = new PlumTree("CHANNEL NAME",sampling.getChannel(),props,self);
+
         babel.registerProtocol(flood);
         flood.init(props);
         DisseminationConsumer dissemination = new DisseminationConsumer(flood.getProtoId(), props);
