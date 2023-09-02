@@ -1,7 +1,8 @@
 package membership;
 
-import appExamples2.appExamples.channels.babelQuicChannel.BabelQUIC_TCP_Channel;
-import appExamples2.appExamples.channels.udpBabelChannel.BabelUDPChannel;
+import appExamples2.appExamples.channels.babelNewChannels.quicChannels.BabelQUIC_P2P_Channel;
+import appExamples2.appExamples.channels.babelNewChannels.tcpChannels.BabelTCP_P2P_Channel;
+import appExamples2.appExamples.channels.babelNewChannels.udpBabelChannel.BabelUDPChannel;
 import membership.messages.PullMessage;
 import membership.messages.PushMessage;
 import membership.requests.GetPeerReply;
@@ -16,13 +17,12 @@ import org.apache.logging.log4j.Logger;
 import pt.unl.fct.di.novasys.babel.channels.events.OnConnectionDownEvent;
 import pt.unl.fct.di.novasys.babel.channels.events.OnMessageConnectionUpEvent;
 import pt.unl.fct.di.novasys.babel.channels.events.OnOpenConnectionFailed;
-import pt.unl.fct.di.novasys.babel.core.GenericProtocol;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocolExtension;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
 import pt.unl.fct.di.novasys.babel.generic.ProtoMessage;
 
 import pt.unl.fct.di.novasys.network.data.Host;
-import tcpSupport.tcpChannelAPI.utils.TCPStreamUtils;
+import tcpSupport.tcpChannelAPI.utils.TCPChannelUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -77,13 +77,13 @@ public class PeerSampling extends GenericProtocolExtension {
 
         Properties channelProps;
         if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
-            channelProps = TCPStreamUtils.tcpChannelProperties(address,port);
-            channelName = BabelQUIC_TCP_Channel.NAME_TCP;
+            channelProps = TCPChannelUtils.tcpChannelProperties(address,port);
+            channelName = BabelTCP_P2P_Channel.CHANNEL_NAME;
         }else if("QUIC".equalsIgnoreCase(NETWORK_PROTO)){
-            channelProps = TCPStreamUtils.quicChannelProperty(address,port);
-            channelName = BabelQUIC_TCP_Channel.NAME_QUIC;
+            channelProps = TCPChannelUtils.quicChannelProperty(address,port);
+            channelName = BabelQUIC_P2P_Channel.CHANNEL_NAME;
         }else{
-            channelProps = TCPStreamUtils.udpChannelProperties(address,port);
+            channelProps = TCPChannelUtils.udpChannelProperties(address,port);
             channelName = BabelUDPChannel.NAME;
         }
         channelProps.remove("AUTO_CONNECT");

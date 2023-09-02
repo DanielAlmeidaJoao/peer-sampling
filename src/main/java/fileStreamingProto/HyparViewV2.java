@@ -1,10 +1,8 @@
-package hyparview;
+package fileStreamingProto;
 
-import appExamples2.appExamples.channels.FactoryMethods;
 import appExamples2.appExamples.channels.babelNewChannels.quicChannels.BabelQUIC_P2P_Channel;
 import appExamples2.appExamples.channels.babelNewChannels.tcpChannels.BabelTCP_P2P_Channel;
 import appExamples2.appExamples.channels.babelNewChannels.udpBabelChannel.BabelUDPChannel;
-import fileStreamingProto.HyparViewInterface;
 import hyparview.messages.*;
 import hyparview.notifications.NeighDown;
 import hyparview.notifications.NeighUp;
@@ -14,13 +12,11 @@ import hyparview.utils.IView;
 import hyparview.utils.View;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import pt.unl.fct.di.novasys.babel.channels.events.OnConnectionDownEvent;
 import pt.unl.fct.di.novasys.babel.channels.events.OnMessageConnectionUpEvent;
 import pt.unl.fct.di.novasys.babel.channels.events.OnOpenConnectionFailed;
 import pt.unl.fct.di.novasys.babel.core.GenericProtocolExtension;
 import pt.unl.fct.di.novasys.babel.exceptions.HandlerRegistrationException;
-
 import pt.unl.fct.di.novasys.network.data.Host;
 import quicSupport.utils.enums.NetworkProtocol;
 import tcpSupport.tcpChannelAPI.utils.TCPChannelUtils;
@@ -32,11 +28,11 @@ import java.net.InetAddress;
 import java.util.*;
 
 
-public class HyparView extends GenericProtocolExtension implements HyparViewInterface {
+public class HyparViewV2 extends GenericProtocolExtension implements HyparViewInterface {
 
-    private static final Logger logger = LogManager.getLogger(HyparView.class);
+    private static final Logger logger = LogManager.getLogger(HyparViewV2.class);
 
-    public final static short PROTOCOL_ID = 400;
+    public final static short PROTOCOL_ID = 420;
     public final static String PROTOCOL_NAME = "HyParView";
     private static final int MAX_BACKOFF = 60000;
 
@@ -64,8 +60,9 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
 
     protected final Random rnd;
     public String NETWORK_PROTO;
+    private Set<Host> hasStreamingCon;
 
-    public HyparView(String channelName, Properties properties, Host myself) throws IOException, HandlerRegistrationException {
+    public HyparViewV2(String channelName, Properties properties, Host myself) throws IOException, HandlerRegistrationException {
         super(PROTOCOL_NAME, PROTOCOL_ID);
         this.myself = myself;
 
@@ -93,6 +90,7 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
         String address = properties.getProperty("address");
         String port = properties.getProperty("port");
         NETWORK_PROTO  = properties.getProperty("NETWORK_PROTO");
+        hasStreamingCon = new HashSet<>();
 
         Properties channelProps;
         if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
@@ -105,11 +103,11 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
         }else{
             channelProps = TCPChannelUtils.udpChannelProperties(address,port);
             channelProps.setProperty(NettyUDPServer.MIN_UDP_RETRANSMISSION_TIMEOUT,"250");
-            channelProps.setProperty(udpSupport.client_server.NettyUDPServer.MAX_SEND_RETRIES_KEY,"100");
+            channelProps.setProperty(NettyUDPServer.MAX_SEND_RETRIES_KEY,"100");
             //channelProps.setProperty(TCPChannelUtils.CHANNEL_METRICS,"ON");
             channelName = BabelUDPChannel.NAME;
         }
-
+        channelProps.remove(TCPChannelUtils.SINGLE_CON_PER_PEER);
         //channelProps.remove("AUTO_CONNECT");
 
         channelId = createChannel(channelName, channelProps);
@@ -277,14 +275,18 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
             }
         } else if(!active.containsPeer(from)){
             passive.addPeer(from);
-            closeConnection(from);
+            closeConnection2(from);
             logger.trace("Added to {} passive{}", from, passive);
             if(!active.fullWithPending(pending)) {
                 setupTimer(new HelloTimeout(), timeout);
             }
         }
     }
-
+    private void closeConnection2(Host host){
+        if(!hasStreamingCon.contains(host)){
+            closeConnection(host);
+        }
+    }
     protected void uponReceiveDisconnect(DisconnectMessage msg, Host from, short sourceProto, int channelId,String connectionId) {
         logger.debug("Received {} from {}", msg, from);
         if(active.containsPeer(from)) {
@@ -304,7 +306,7 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
 
     private void uponDisconnectSent(DisconnectMessage msg, Host host, short destProto, int channelId) {
         logger.trace("Sent {} to {}", msg, host);
-        closeConnection(host);
+        closeConnection2(host);
     }
 
     private void uponReceiveShuffle(ShuffleMessage msg, Host from, short sourceProto, int channelId,String connectionId) {
@@ -338,7 +340,7 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
     private void uponShuffleReplySent(ShuffleReplyMessage msg, Host host, short destProto, int channelId) {
         if(!active.containsPeer(host) && !pending.contains(host)) {
             logger.trace("Disconnecting from {} after shuffleReply", host);
-            closeConnection(host);
+            closeConnection2(host);
         }
     }
 
