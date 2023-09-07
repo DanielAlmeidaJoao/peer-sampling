@@ -56,20 +56,24 @@ public class Main {
         }
         Host self = new Host(InetAddress.getByName(address), Short.parseShort(port));
         //PeerSampling sampling = new PeerSampling(props);
-        logger.info("Hello, I am {}", self);
+        String NETWORK_PROTO  = props.getProperty("NETWORK_PROTO");
+
+        logger.info("Hello, I am {}. PROTO: {}", self,NETWORK_PROTO);
         HyparViewInterface sampling;
         PlumTreeInterface flood;
         if(APP_TYPR.equals("NORMAL")){
             sampling = new HyparView(null, props, self);
             babel.registerProtocol((HyparView)sampling);
-            sampling.init(props);
 
             flood = new PlumTree("CHANNEL NAME",sampling.getChannel(),props,self);
             babel.registerProtocol((PlumTree)flood);
-            flood.init(props);
 
             DisseminationConsumer dissemination = new DisseminationConsumer(flood.getProtoId(), props);
             babel.registerProtocol(dissemination);
+            babel.start();
+
+            sampling.init(props);
+            flood.init(props);
             dissemination.init(props);
         }else{
             sampling = new HyparViewV2(null, props, self);
@@ -83,6 +87,7 @@ public class Main {
             DisseminationConsumer2 dissemination = new DisseminationConsumer2(flood.getProtoId(), props);
             babel.registerProtocol(dissemination);
             dissemination.init(props);
+            babel.start();
         }
 
 
@@ -90,7 +95,6 @@ public class Main {
 
 
 
-        babel.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() ->{
 
             System.out.println("CONNECTED PEERS "+sampling.connectedPeers());

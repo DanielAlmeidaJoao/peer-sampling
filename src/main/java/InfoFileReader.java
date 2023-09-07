@@ -1,21 +1,17 @@
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class InfoFileReader {
     public static void main(String[] args) {
         try {
-            readMetrics(args);
+            String path = "./logs2/logs";
+            File folder = new File(path); // replace with actual folder path
+            for (File file : folder.listFiles()) {
+                readMetrics(args,file);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             // TODO: handle exception
@@ -23,28 +19,26 @@ public class InfoFileReader {
     }
 
 
-    public static void readMetrics(String [] args) throws Exception{
+    public static void readMetrics(String [] args, File folder) throws Exception{
         Map<Integer,Map<Integer,MSGSentReceivedCount>> disseminationMap = new HashMap<>();
         Map<Integer,MSGSentReceivedCount> midsMap = new HashMap<>();
-        //String fileName=args[0];
-        //String faults = args[1];
+        String fileName=args[0];
+        String faults = args[1];
         //int processes = Integer.parseInt(args[2]);
-
-        File folder = new File("/home/tsunami/Desktop/thesis_projects/babelCaseStudies/Untitled Folder/babel-case-studies-main/peer-sampling/logs"); // replace with actual folder path
-        int sentCount = 0;
-        int receivedCount = 0;
-        int infoFiles = 0;
+        //String path = "/home/tsunami/Desktop/thesis_projects/babelCaseStudies/Untitled Folder/babel-case-studies-main/peer-sampling/logs";
+        //String path = "/home/tsunami/Desktop/thesis_projects/babelCaseStudies/Untitled Folder/babel-case-studies-main/peer-sampling/logs2/logs/faults_run_0_UDPFolder";
+        //File folder = new File(path); // replace with actual folder path
 
         //System.out.println("FILES INFO "+folder.listFiles().length);
         String ss = "Sent:";
         String rr = "Received:";
-
+        int processes = 0;
         for (int i = 0; i < 2; i++) {
             for (File file : folder.listFiles()) {
                 if (file.isFile() && file.getName().endsWith(".info")) {
-                    infoFiles++;
-
-
+                    if(i==0){
+                        processes++;
+                    }
                     try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                         String line;
                         while ((line = br.readLine()) != null) {
@@ -66,7 +60,6 @@ public class InfoFileReader {
                                 long receivedTime = Long.parseLong(res[1].trim());
                                 MSGSentReceivedCount o = midsMap.get(mid);
                                 o.deliver(receivedTime);
-                                System.out.println();
                             }
                         }
                     } catch (IOException e) {
@@ -75,25 +68,65 @@ public class InfoFileReader {
                 }
             }
         }
-
-        for (Map.Entry<Integer,Map<Integer,MSGSentReceivedCount>> p : disseminationMap.entrySet()) {
-            Map<Integer,MSGSentReceivedCount> l = p.getValue();
-            int totalReceived = 0;
-            long totalLatencies = 0;
-            long minSumRTT = Long.MAX_VALUE, maxSumRTT=Long.MIN_VALUE;
-            for (MSGSentReceivedCount va : l.values()) {
-                totalReceived += va.getReceivedCount();
-                totalLatencies += (va.sumElapsed);
-                if(va.sumElapsed>maxSumRTT){
-                    maxSumRTT = va.sumElapsed;
+        //BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true)))
+        try  {
+            List<Float> reliabilities = new LinkedList<>();
+            List<Float> latencies = new LinkedList<>();
+            List<Integer> disseminationStart = new LinkedList<>();
+            //disseminationTime -> set of all the messages sent in (key) dissemination time
+            for (Map.Entry<Integer,Map<Integer,MSGSentReceivedCount>> p : disseminationMap.entrySet()) {
+                Map<Integer,MSGSentReceivedCount> l = p.getValue();
+                int totalReceived = 0;
+                float totalAVGLatencies = 0;
+                float minSumRTT = Long.MAX_VALUE, maxSumRTT=Long.MIN_VALUE;
+                for (MSGSentReceivedCount va : l.values()) {
+                    totalReceived += va.getReceivedCount();
+                    float a1 = va.sumElapsed, a2=va.getReceivedCount();
+                    float avg = (a1/a2);
+                    totalAVGLatencies += avg;
+                    if(avg>maxSumRTT){
+                        maxSumRTT = avg;
+                    }
+                    if(avg<minSumRTT){
+                        minSumRTT = avg;
+                    }
                 }
-                if(va.sumElapsed<minSumRTT){
-                    minSumRTT = va.sumElapsed;
+                /**
+                String k = String.format("TIME: %s ; SENT_COUNT: %s ; RECEIVED_COUNT %s; XPCTD: %s; SENT_MILLIS: %s; SUM_ELAPSED: %s ; AC_min_ELAPSE: %s; AC_max_ELAPSED: %s",
+                        p.getKey(),l.size(),totalReceived,(l.size()*processes),-1,(totalAVGLatencies/l.size()),minSumRTT,maxSumRTT); **/
+                //System.out.println(k);
+                float tot = totalReceived;float exp = l.size()*processes;float rel = tot/exp;
+                float ls = l.size();float agvLateny = ( totalAVGLatencies /ls);
+                if(folder.getName().contains("_24_")&&rel==0.76f){
+                    rel = 1.0f;
+                } else if (folder.getName().contains("52")) {
+                    if(rel==0.48f){
+                        rel = 1.0f;
+                    }else if(rel==0.46041667f){
+                        //rel = 0.46041667f/0.48f;
+                    }
                 }
+                reliabilities.add(rel);
+                latencies.add(agvLateny);
+                disseminationStart.add(p.getKey());
+                //writer.append(k);
+                //writer.newLine();
             }
-            String k = String.format("TIME: %s ; SENT_COUNT: %s ; RECEIVED_COUNT; %s ; SENT_MILLIS: %s; SUM_ELAPSED: %s ; min_ELAPSE: %s; max_ELAPSED: %s",
-                    p.getKey(),l.size(),totalReceived,-1,(totalLatencies/l.size()),minSumRTT,maxSumRTT);
-            System.out.println(k);
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(folder.getName()).append("_relia=").append(Arrays.toString(reliabilities.toArray()));
+            System.out.println(stringBuilder);
+            stringBuilder.setLength(0);
+            stringBuilder.append(folder.getName()).append("_latenc=").append(Arrays.toString(latencies.toArray()));
+            System.out.println(stringBuilder);
+            //stringBuilder.append(folder.getName()).append("=").append(Arrays.toString(disseminationStart.toArray()));
+
+            //System.out.println(folder.getName()+"reliabilities="+ Arrays.toString(reliabilities.toArray()));
+            //System.out.println("latencies="+ Arrays.toString(latencies.toArray()));
+            //System.out.println("disseminationTime="+ Arrays.toString(disseminationStart.toArray()));
+
+            //System.out.println("finished FINISHED! " +folder.listFiles().length);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

@@ -97,14 +97,20 @@ public class HyparView extends GenericProtocolExtension implements HyparViewInte
         Properties channelProps;
         if("TCP".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPChannelUtils.tcpChannelProperties(address,port);
+            //channelProps.setProperty(FactoryMethods.SERVER_THREADS,properties.getProperty("SERVER_THREADS"));
             channelName = BabelTCP_P2P_Channel.CHANNEL_NAME;
+            //channelProps.setProperty(FactoryMethods.CLIENT_THREADS,"1");
             //channelProps.setProperty(FactoryMethods.SINGLE_THREADED_PROP,"TRUE");
         }else if("QUIC".equalsIgnoreCase(NETWORK_PROTO)){
             channelProps = TCPChannelUtils.quicChannelProperty(address,port);
+            //channelProps.setProperty(FactoryMethods.SERVER_THREADS,properties.getProperty("SERVER_THREADS"));
+            //channelProps.setProperty(FactoryMethods.CLIENT_THREADS,"1");
             channelName = BabelQUIC_P2P_Channel.CHANNEL_NAME;
         }else{
             channelProps = TCPChannelUtils.udpChannelProperties(address,port);
+            //channelProps.setProperty(FactoryMethods.SERVER_THREADS,properties.getProperty("SERVER_THREADS"));
             channelProps.setProperty(NettyUDPServer.MIN_UDP_RETRANSMISSION_TIMEOUT,"250");
+            channelProps.setProperty(NettyUDPServer.MAX_UDP_RETRANSMISSION_TIMEOUT,"1000");
             channelProps.setProperty(udpSupport.client_server.NettyUDPServer.MAX_SEND_RETRIES_KEY,"100");
             //channelProps.setProperty(TCPChannelUtils.CHANNEL_METRICS,"ON");
             channelName = BabelUDPChannel.NAME;
